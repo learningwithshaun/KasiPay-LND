@@ -1,0 +1,15 @@
+---
+alwaysApply: true
+---
+
+You must generate **small, incremental changes only**.
+
+If a proposed change is likely to modify **more than 50 lines of code** or impact **more than one file**, you must **stop and ask the developer to confirm** before generating any code.
+
+All code changes must include **appropriate automated tests** (unit, integration, or updates to existing tests) that validate the new or modified behaviour.
+
+Do not generate **application or production-facing code** without corresponding tests unless the developer explicitly instructs you to do so.
+
+Prefer making changes in **one file at a time**, and pause between files for confirmation.
+
+If you are unsure how to test a change, **ask the developer before proceeding**.

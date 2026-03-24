@@ -1,0 +1,99 @@
+import { useState, useEffect } from 'react';
+import { Layout } from '../components/Layout';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import * as api from '../services/api';
+import type { Payout } from '../types';
+
+export function EarningsPage() {
+  const [payouts, setPayouts] = useState<Payout[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    loadPayouts();
+  }, []);
+
+  const loadPayouts = async () => {
+    try {
+      setLoading(true);
+      const data = await api.getMyPayouts(1, 50);
+      setPayouts(data.items);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load earnings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totalEarnings = payouts
+    .filter(p => p.status === 'COMPLETED')
+    .reduce((sum, p) => sum + p.amountZAR, 0);
+
+  const getStatusBadge = (status: string) => {
+    const badges: Record<string, { class: string; label: string }> = {
+      PENDING: { class: 'badge-warning', label: 'Pending' },
+      PROCESSING: { class: 'badge-warning', label: 'Processing' },
+      COMPLETED: { class: 'badge-success', label: 'Paid' },
+      FAILED: { class: 'badge-error', label: 'Failed' },
+    };
+    const badge = badges[status] || { class: 'badge-neutral', label: status };
+    return <span className={`badge ${badge.class}`}>{badge.label}</span>;
+  };
+
+  return (
+    <Layout title="Earnings">
+      {loading ? (
+        <LoadingSpinner size="lg" centered />
+      ) : error ? (
+        <div className="error-message">{error}</div>
+      ) : (
+        <div className="stack-lg">
+          {/* Total earnings card */}
+          <div className="card text-center">
+            <p className="text-muted text-small" style={{ marginBottom: 'var(--spacing-xs)' }}>
+              Total Earned
+            </p>
+            <p className="currency currency-lg">R{totalEarnings.toFixed(2)}</p>
+          </div>
+
+          {/* Payouts list */}
+          {payouts.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-state-icon">💰</div>
+              <p>No earnings yet</p>
+              <p className="text-small text-muted">Complete tasks to start earning!</p>
+            </div>
+          ) : (
+            <div className="stack">
+              <h3>Payment History</h3>
+              {payouts.map((payout) => (
+                <div key={payout._id} className="card">
+                  <div className="row row-between" style={{ marginBottom: 'var(--spacing-sm)' }}>
+                    <span className="currency">R{payout.amountZAR.toFixed(2)}</span>
+                    {getStatusBadge(payout.status)}
+                  </div>
+                  <div className="row row-between">
+                    <span className="text-small text-muted">
+                      {new Date(payout.initiatedAt).toLocaleDateString()}
+                    </span>
+                    {payout.completedAt && (
+                      <span className="text-small text-muted">
+                        {new Date(payout.completedAt).toLocaleTimeString()}
+                      </span>
+                    )}
+                  </div>
+                  {payout.errorMessage && (
+                    <p className="text-small" style={{ color: 'var(--color-error)', marginTop: 'var(--spacing-sm)' }}>
+                      {payout.errorMessage}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </Layout>
+  );
+}
+
