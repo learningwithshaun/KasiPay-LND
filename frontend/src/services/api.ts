@@ -44,6 +44,61 @@ export function getAccessToken() {
   return accessToken;
 }
 
+function toCamelCase(value: string) {
+  return value.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
+}
+
+function normalizeKeys<T>(value: unknown): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeKeys(item)) as T;
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.entries(value as Record<string, unknown>).reduce<Record<string, unknown>>((acc, [key, item]) => {
+      acc[toCamelCase(key)] = normalizeKeys(item);
+      return acc;
+    }, {}) as T;
+  }
+
+  return value as T;
+}
+
+async function parseResponseBody(response: Response): Promise<unknown> {
+  const text = await response.text();
+
+  if (!text.trim()) {
+    if (response.ok) {
+      return undefined;
+    }
+    throw new Error(`Backend returned ${response.status} ${response.statusText || 'with no response body'}`);
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`Backend returned a non-JSON response (${response.status} ${response.statusText || 'unknown status'})`);
+  }
+}
+
+function unwrapApiResponse<T>(payload: unknown): T {
+  const data = payload as ApiResponse<T> & Record<string, unknown>;
+
+  if (data && typeof data === 'object' && 'success' in data) {
+    if (!data.success) {
+      throw new Error((data.error || data.message || 'Request failed') as string);
+    }
+
+    if ('data' in data) return data.data as T;
+    if ('user' in data) return data.user as T;
+    if ('task' in data) return data.task as T;
+    if ('tasks' in data) return data.tasks as T;
+    if ('claims' in data) return data.claims as T;
+    if ('payouts' in data) return data.payouts as T;
+  }
+
+  return payload as T;
+}
+
 // API request helper
 async function request<T>(
   endpoint: string,
@@ -63,9 +118,9 @@ async function request<T>(
     headers,
   });
 
-  const data: ApiResponse<T> = await response.json();
+  const payload = normalizeKeys<Record<string, unknown> | undefined>(await parseResponseBody(response));
 
-  if (!response.ok || !data.success) {
+  if (!response.ok) {
     // Try to refresh token on 401
     if (response.status === 401 && refreshToken) {
       const refreshed = await refreshAccessToken();
@@ -76,16 +131,20 @@ async function request<T>(
           ...options,
           headers,
         });
-        const retryData: ApiResponse<T> = await retryResponse.json();
-        if (retryData.success) {
-          return retryData.data as T;
+        const retryPayload = normalizeKeys<Record<string, unknown> | undefined>(await parseResponseBody(retryResponse));
+        if (retryResponse.ok) {
+          return unwrapApiResponse<T>(retryPayload);
         }
       }
     }
-    throw new Error(data.error || 'Request failed');
+    throw new Error((payload?.error || payload?.detail || payload?.message || 'Request failed') as string);
   }
 
-  return data.data as T;
+  if (!payload) {
+    throw new Error(`Backend returned empty response for ${endpoint}`);
+  }
+
+  return unwrapApiResponse<T>(payload);
 }
 
 async function refreshAccessToken(): Promise<boolean> {
@@ -96,10 +155,11 @@ async function refreshAccessToken(): Promise<boolean> {
       body: JSON.stringify({ refreshToken }),
     });
     
-    const data: ApiResponse<{ accessToken: string }> = await response.json();
+    const payload = normalizeKeys<Record<string, unknown> | undefined>(await parseResponseBody(response));
+    const data = unwrapApiResponse<{ accessToken: string }>(payload);
     
-    if (data.success && data.data) {
-      accessToken = data.data.accessToken;
+    if (response.ok && data.accessToken) {
+      accessToken = data.accessToken;
       localStorage.setItem('accessToken', accessToken);
       return true;
     }
@@ -116,7 +176,7 @@ async function refreshAccessToken(): Promise<boolean> {
 export async function register(phone: string, pin: string, displayName: string): Promise<AuthResponse> {
   const data = await request<AuthResponse>('/auth/register', {
     method: 'POST',
-    body: JSON.stringify({ phone, pin, displayName }),
+    body: JSON.stringify({ phone, pin, display_name: displayName }),
   });
   setTokens(data.accessToken, data.refreshToken);
   return data;

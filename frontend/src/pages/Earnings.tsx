@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Layout } from '../components/Layout';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import * as api from '../services/api';
@@ -26,7 +26,11 @@ export function EarningsPage() {
   };
 
   const totalEarnings = payouts
-    .filter(p => p.status === 'COMPLETED')
+    .filter((p) => p.status === 'COMPLETED')
+    .reduce((sum, p) => sum + p.amountZAR, 0);
+
+  const pendingTotal = payouts
+    .filter((p) => p.status === 'PENDING' || p.status === 'PROCESSING')
     .reduce((sum, p) => sum + p.amountZAR, 0);
 
   const getStatusBadge = (status: string) => {
@@ -48,24 +52,39 @@ export function EarningsPage() {
         <div className="error-message">{error}</div>
       ) : (
         <div className="stack-lg">
-          {/* Total earnings card */}
-          <div className="card text-center">
-            <p className="text-muted text-small" style={{ marginBottom: 'var(--spacing-xs)' }}>
-              Total Earned
-            </p>
-            <p className="currency currency-lg">R{totalEarnings.toFixed(2)}</p>
-          </div>
+          <section className="hero-panel" style={{ margin: '-1.25rem -1rem 0' }}>
+            <div className="container stack">
+              <div className="trust-chip">
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>payments</span>
+                Instant payouts
+              </div>
+              <div>
+                <p className="metric">R{totalEarnings.toFixed(2)}</p>
+                <h2>total earned</h2>
+              </div>
+              <div className="card row row-between">
+                <div>
+                  <p className="text-small text-muted">Pending</p>
+                  <p className="currency">R{pendingTotal.toFixed(2)}</p>
+                </div>
+                <span className="material-symbols-outlined" style={{ color: 'var(--color-secondary)' }}>
+                  bolt
+                </span>
+              </div>
+            </div>
+          </section>
 
-          {/* Payouts list */}
           {payouts.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-state-icon">💰</div>
+              <div className="empty-state-icon">
+                <span className="material-symbols-outlined">payments</span>
+              </div>
               <p>No earnings yet</p>
-              <p className="text-small text-muted">Complete tasks to start earning!</p>
+              <p className="text-small text-muted">Complete tasks to start earning.</p>
             </div>
           ) : (
             <div className="stack">
-              <h3>Payment History</h3>
+              <h2>Payment history</h2>
               {payouts.map((payout) => (
                 <div key={payout._id} className="card">
                   <div className="row row-between" style={{ marginBottom: 'var(--spacing-sm)' }}>
@@ -96,4 +115,3 @@ export function EarningsPage() {
     </Layout>
   );
 }
-

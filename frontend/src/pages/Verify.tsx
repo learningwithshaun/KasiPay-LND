@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import * as api from '../services/api';
-import type { TaskClaim, Task, User } from '../types';
+import type { Task, TaskClaim, User } from '../types';
 
 export function VerifyPage() {
   const [claims, setClaims] = useState<TaskClaim[]>([]);
@@ -44,48 +44,54 @@ export function VerifyPage() {
   };
 
   return (
-    <Layout title="Verify Tasks">
+    <Layout title="Verify">
       {loading ? (
         <LoadingSpinner size="lg" centered />
       ) : error ? (
         <div className="error-message">{error}</div>
       ) : claims.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">✅</div>
+          <div className="empty-state-icon">
+            <span className="material-symbols-outlined">verified</span>
+          </div>
           <p>No tasks to verify</p>
           <p className="text-small text-muted">All caught up!</p>
         </div>
       ) : (
-        <div className="stack">
-          <p className="text-muted text-small">{claims.length} task(s) pending review</p>
-          
-          {claims.map((claim) => {
-            const taskInfo = getTaskInfo(claim);
-            const earnerInfo = getEarnerInfo(claim);
-            
-            return (
-              <button
-                key={claim._id}
-                className="task-card"
-                onClick={() => navigate(`/verify/${claim._id}`)}
-                style={{ textAlign: 'left', cursor: 'pointer', width: '100%' }}
-              >
-                <div className="row row-between" style={{ marginBottom: 'var(--spacing-sm)' }}>
-                  <h3 style={{ fontSize: '1rem', flex: 1 }}>{taskInfo.title}</h3>
-                  <span className="currency">R{taskInfo.rewardZAR.toFixed(2)}</span>
-                </div>
-                <p className="text-small" style={{ marginBottom: 'var(--spacing-xs)' }}>
-                  Submitted by: <strong>{earnerInfo.name}</strong>
-                </p>
-                <p className="text-small text-muted">
-                  {claim.submittedAt && new Date(claim.submittedAt).toLocaleString()}
-                </p>
-              </button>
-            );
-          })}
+        <div className="stack-lg">
+          <div className="feature-card">
+            <h2>Verification queue</h2>
+            <p>{claims.length} task{claims.length === 1 ? '' : 's'} pending review.</p>
+          </div>
+
+          <div className="stack">
+            {claims.map((claim) => {
+              const taskInfo = getTaskInfo(claim);
+              const earnerInfo = getEarnerInfo(claim);
+
+              return (
+                <button
+                  key={claim._id}
+                  className="task-card"
+                  onClick={() => navigate(`/verify/${claim._id}`)}
+                  style={{ textAlign: 'left', cursor: 'pointer', width: '100%' }}
+                >
+                  <div className="row row-between" style={{ marginBottom: 'var(--spacing-sm)', alignItems: 'flex-start' }}>
+                    <h3 style={{ fontSize: '1rem', flex: 1 }}>{taskInfo.title}</h3>
+                    <span className="currency">R{taskInfo.rewardZAR.toFixed(2)}</span>
+                  </div>
+                  <p className="text-small" style={{ marginBottom: 'var(--spacing-xs)' }}>
+                    Submitted by: <strong>{earnerInfo.name}</strong>
+                  </p>
+                  <p className="text-small text-muted">
+                    {claim.submittedAt && new Date(claim.submittedAt).toLocaleString()}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </Layout>
   );
 }
-

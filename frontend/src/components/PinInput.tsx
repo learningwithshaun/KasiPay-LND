@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, KeyboardEvent } from 'react';
 
 interface PinInputProps {
   length?: number;
@@ -12,8 +12,8 @@ export function PinInput({ length = 4, value, onChange, disabled }: PinInputProp
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (focused && inputRef.current) {
-      inputRef.current.focus();
+    if (focused) {
+      inputRef.current?.focus();
     }
   }, [focused]);
 
@@ -24,9 +24,9 @@ export function PinInput({ length = 4, value, onChange, disabled }: PinInputProp
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value.replace(/\D/g, '');
-    if (newValue.length <= length) {
-      onChange(newValue);
+    const nextValue = e.target.value.replace(/\D/g, '');
+    if (nextValue.length <= length) {
+      onChange(nextValue);
     }
   };
 
@@ -36,13 +36,8 @@ export function PinInput({ length = 4, value, onChange, disabled }: PinInputProp
     }
   };
 
-  const handleBackspace = () => {
-    onChange(value.slice(0, -1));
-  };
-
   return (
     <div className="stack-lg">
-      {/* Hidden input for keyboard on mobile */}
       <input
         ref={inputRef}
         type="tel"
@@ -58,16 +53,15 @@ export function PinInput({ length = 4, value, onChange, disabled }: PinInputProp
         autoComplete="one-time-code"
       />
 
-      {/* Visual PIN display */}
-      <div 
-        className="pin-input-container" 
+      <div
+        className="pin-input-container"
         onClick={() => !disabled && inputRef.current?.focus()}
         style={{ cursor: disabled ? 'default' : 'pointer' }}
       >
         {Array.from({ length }, (_, i) => (
           <div
             key={i}
-            className="pin-digit"
+            className={`pin-digit ${value[i] ? 'filled' : ''}`}
             style={{
               borderColor: i === value.length && focused ? 'var(--color-primary)' : undefined,
             }}
@@ -77,28 +71,31 @@ export function PinInput({ length = 4, value, onChange, disabled }: PinInputProp
         ))}
       </div>
 
-      {/* Keypad */}
       <div className="keypad">
-        {['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '←'].map((key, i) => (
+        {['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'backspace'].map((key, i) => (
           <button
             key={i}
             type="button"
             className="keypad-btn"
             disabled={disabled || key === ''}
             onClick={() => {
-              if (key === '←') {
-                handleBackspace();
+              if (key === 'backspace') {
+                onChange(value.slice(0, -1));
               } else if (key !== '') {
                 handleKeypadPress(key);
               }
             }}
             style={key === '' ? { visibility: 'hidden' } : undefined}
+            aria-label={key === 'backspace' ? 'Backspace' : key || undefined}
           >
-            {key}
+            {key === 'backspace' ? (
+              <span className="material-symbols-outlined">backspace</span>
+            ) : (
+              key
+            )}
           </button>
         ))}
       </div>
     </div>
   );
 }
-

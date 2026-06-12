@@ -1,5 +1,6 @@
 """Lightning Payday - FastAPI Application"""
 import asyncio
+import sys
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
@@ -13,6 +14,11 @@ from app.api import api_router
 from app.lnd import init_lnd_client, get_lnd_client
 from app.services.user_service import UserService
 from app.services.job_service import JobService
+
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
 
 
 # Background task for expiring stale jobs

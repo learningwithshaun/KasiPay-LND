@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import * as api from '../services/api';
-import type { TaskClaim, Task } from '../types';
+import type { Task, TaskClaim } from '../types';
 
 export function MyTasksPage() {
   const [claims, setClaims] = useState<TaskClaim[]>([]);
@@ -55,46 +55,48 @@ export function MyTasksPage() {
         <div className="error-message">{error}</div>
       ) : claims.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">📝</div>
+          <div className="empty-state-icon">
+            <span className="material-symbols-outlined">work_history</span>
+          </div>
           <p>No tasks yet</p>
           <p className="text-small text-muted">Claim a task to get started!</p>
-          <button 
-            className="btn btn-primary" 
-            style={{ marginTop: 'var(--spacing-lg)' }}
-            onClick={() => navigate('/tasks')}
-          >
+          <button className="btn btn-action" style={{ marginTop: 'var(--spacing-lg)' }} onClick={() => navigate('/tasks')}>
             Browse Tasks
           </button>
         </div>
       ) : (
-        <div className="stack">
-          {claims.map((claim) => {
-            const taskInfo = getTaskInfo(claim);
-            return (
-              <button
-                key={claim._id}
-                className="task-card"
-                onClick={() => navigate(`/task/${taskInfo.id}`)}
-                style={{ textAlign: 'left', cursor: 'pointer', width: '100%' }}
-              >
-                <div className="row row-between" style={{ marginBottom: 'var(--spacing-sm)' }}>
-                  <h3 style={{ fontSize: '1rem', flex: 1 }}>{taskInfo.title}</h3>
-                  {getStatusBadge(claim.status)}
-                </div>
-                <div className="row row-between">
-                  <span className="text-small text-muted">
-                    Claimed {new Date(claim.claimedAt).toLocaleDateString()}
-                  </span>
-                  {taskInfo.rewardZAR > 0 && (
-                    <span className="currency">R{taskInfo.rewardZAR.toFixed(2)}</span>
-                  )}
-                </div>
-              </button>
-            );
-          })}
+        <div className="stack-lg">
+          <div className="feature-card">
+            <h2>Work in progress</h2>
+            <p>{claims.length} task{claims.length === 1 ? '' : 's'} linked to your account.</p>
+          </div>
+
+          <div className="stack">
+            {claims.map((claim) => {
+              const taskInfo = getTaskInfo(claim);
+              return (
+                <button
+                  key={claim._id}
+                  className="task-card"
+                  onClick={() => navigate(`/task/${taskInfo.id}`)}
+                  style={{ textAlign: 'left', cursor: 'pointer', width: '100%' }}
+                >
+                  <div className="row row-between" style={{ marginBottom: 'var(--spacing-sm)', alignItems: 'flex-start' }}>
+                    <h3 style={{ fontSize: '1rem', flex: 1 }}>{taskInfo.title}</h3>
+                    {getStatusBadge(claim.status)}
+                  </div>
+                  <div className="row row-between">
+                    <span className="text-small text-muted">
+                      Claimed {new Date(claim.claimedAt).toLocaleDateString()}
+                    </span>
+                    {taskInfo.rewardZAR > 0 && <span className="currency">R{taskInfo.rewardZAR.toFixed(2)}</span>}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </Layout>
   );
 }
-

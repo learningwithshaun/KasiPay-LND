@@ -116,8 +116,8 @@ async def decode_invoice_route(
 @router.get("/liquidity/{destination}")
 async def check_liquidity(
     destination: str,
-    amount: int = 0,
     current_user: Annotated[dict, Depends(require_role(UserRole.OPERATOR, UserRole.ADMIN))],
+    amount: int = 0,
 ):
     """Check liquidity to a destination (operator only)"""
     client = get_lnd_client()

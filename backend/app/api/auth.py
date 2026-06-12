@@ -19,7 +19,12 @@ async def register(data: UserCreate):
     
     try:
         result = await user_service.register(data)
-        return result
+        return {
+            "access_token": result["access_token"],
+            "refresh_token": result["refresh_token"],
+            "token_type": result["token_type"],
+            "user": result["user"],
+        }
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -35,7 +40,12 @@ async def login(data: UserLogin):
     
     try:
         result = await user_service.login(data.phone, data.pin)
-        return result
+        return {
+            "access_token": result["access_token"],
+            "refresh_token": result["refresh_token"],
+            "token_type": result["token_type"],
+            "user": result["user"],
+        }
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -51,7 +61,7 @@ async def refresh_token(current_user: Annotated[dict, Depends(get_current_user)]
     
     try:
         result = await user_service.refresh_token(current_user["user_id"])
-        return result
+        return {"success": True, "data": result}
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

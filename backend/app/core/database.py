@@ -1,6 +1,7 @@
 """MongoDB database connection using Motor async driver"""
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from pymongo import IndexModel, ASCENDING, DESCENDING
+from pymongo.errors import ServerSelectionTimeoutError
 
 from .config import settings
 
@@ -13,11 +14,17 @@ async def init_database() -> AsyncIOMotorDatabase:
     """Initialize MongoDB connection and create indexes"""
     global _client, _database
     
-    _client = AsyncIOMotorClient(settings.mongodb_uri)
+    _client = AsyncIOMotorClient(settings.mongodb_uri, serverSelectionTimeoutMS=5000)
     _database = _client[settings.mongodb_database]
     
     # Create indexes
-    await create_indexes(_database)
+    try:
+        await create_indexes(_database)
+    except ServerSelectionTimeoutError as exc:
+        raise RuntimeError(
+            "MongoDB is not reachable. Start MongoDB on localhost:27017, "
+            "or set MONGODB_URI to a running MongoDB connection string."
+        ) from exc
     
     print(f"✓ Connected to MongoDB: {settings.mongodb_database}")
     return _database

@@ -1,7 +1,8 @@
 """Application configuration using Pydantic Settings"""
 from functools import lru_cache
-from typing import Literal
+from typing import Any, Literal
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -50,6 +51,18 @@ class Settings(BaseSettings):
     # Rate Limiting
     rate_limit_requests: int = 100
     rate_limit_window_seconds: int = 60
+
+    @field_validator("debug", "mock_mode", mode="before")
+    @classmethod
+    def parse_boolish_env(cls, value: Any) -> Any:
+        """Accept common environment labels where booleans are expected."""
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"release", "prod", "production", "false", "0", "no", "off"}:
+                return False
+            if normalized in {"debug", "dev", "development", "true", "1", "yes", "on"}:
+                return True
+        return value
     
     @property
     def is_lnd_configured(self) -> bool:
